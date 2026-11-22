@@ -1,0 +1,1921 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Warehouse Delivery Robot — AI Decision System (AIF1303)</title>
+  <style>
+    :root {
+      --bg-primary: #0f172a;
+      --bg-secondary: #1e293b;
+      --bg-tertiary: #0b1120;
+      --border-color: #334155;
+      --text-primary: #f8fafc;
+      --text-secondary: #94a3b8;
+      --accent-cyan: #38bdf8;
+      --accent-emerald: #22c55e;
+      --accent-amber: #f59e0b;
+      --accent-rose: #f43f5e;
+      --accent-purple: #a855f7;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header */
+    header {
+      background-color: var(--bg-tertiary);
+      border-bottom: 1px solid var(--border-color);
+      padding: 14px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-badge {
+      background: linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(168, 85, 247, 0.2));
+      border: 1px solid var(--accent-cyan);
+      color: var(--accent-cyan);
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 6px;
+      letter-spacing: 0.05em;
+    }
+
+    h1 {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    .subtitle {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    .algo-pills {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .pill {
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background-color: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+    }
+
+    .pill strong {
+      color: var(--text-primary);
+    }
+
+    /* 3-Column Dashboard */
+    .dashboard {
+      display: grid;
+      grid-template-columns: 300px 1fr 375px;
+      gap: 16px;
+      padding: 16px 20px;
+      flex: 1;
+      align-items: start;
+    }
+
+    @media (max-width: 1240px) {
+      .dashboard {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background-color: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 16px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+    }
+
+    .card-title {
+      font-size: 11.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--accent-cyan);
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .section-divider {
+      height: 1px;
+      background-color: var(--border-color);
+      margin: 12px 0;
+    }
+
+    /* Controls */
+    .btn-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    button {
+      cursor: pointer;
+      border: 1px solid var(--border-color);
+      background-color: var(--bg-tertiary);
+      color: var(--text-primary);
+      padding: 8px 10px;
+      border-radius: 7px;
+      font-size: 12px;
+      font-weight: 600;
+      transition: all 0.15s ease;
+    }
+
+    button:hover {
+      border-color: var(--accent-cyan);
+      background-color: rgba(56, 189, 248, 0.1);
+    }
+
+    button.primary {
+      background-color: rgba(34, 197, 94, 0.18);
+      border-color: var(--accent-emerald);
+      color: #86efac;
+    }
+
+    button.primary.paused {
+      background-color: rgba(245, 158, 11, 0.18);
+      border-color: var(--accent-amber);
+      color: #fde68a;
+    }
+
+    button.accent {
+      width: 100%;
+      background-color: rgba(56, 189, 248, 0.16);
+      border-color: var(--accent-cyan);
+      color: #bae6fd;
+    }
+
+    button.benchmark-btn {
+      width: 100%;
+      background: linear-gradient(90deg, rgba(168, 85, 247, 0.22), rgba(56, 189, 248, 0.22));
+      border-color: var(--accent-purple);
+      color: #e9d5ff;
+      padding: 10px;
+    }
+
+    button.benchmark-btn:hover {
+      border-color: var(--accent-cyan);
+    }
+
+    .control-group {
+      margin-bottom: 10px;
+    }
+
+    .control-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11.5px;
+      color: var(--text-secondary);
+      margin-bottom: 4px;
+    }
+
+    .control-label span.val {
+      color: var(--text-primary);
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-weight: 600;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent-cyan);
+      cursor: pointer;
+    }
+
+    .toggle-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      background-color: var(--bg-tertiary);
+      padding: 4px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+    }
+
+    .toggle-btn {
+      padding: 6px 5px;
+      font-size: 11px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--text-secondary);
+      border-radius: 5px;
+    }
+
+    .toggle-btn.active {
+      background-color: var(--bg-secondary);
+      border-color: var(--accent-cyan);
+      color: var(--accent-cyan);
+    }
+
+    .legend-list {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px;
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .swatch {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+
+    .hint-box {
+      margin-top: 10px;
+      padding: 8px 10px;
+      border-radius: 7px;
+      background-color: rgba(56, 189, 248, 0.08);
+      border: 1px dashed rgba(56, 189, 248, 0.4);
+      font-size: 11px;
+      color: #cbd5e1;
+      line-height: 1.45;
+    }
+
+    /* Center Canvas Stage */
+    .canvas-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .canvas-header {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: var(--accent-emerald);
+      box-shadow: 0 0 8px var(--accent-emerald);
+    }
+
+    .dot.paused {
+      background-color: var(--accent-amber);
+      box-shadow: 0 0 8px var(--accent-amber);
+    }
+
+    canvas {
+      background-color: #0b1120;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      cursor: crosshair;
+      max-width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .fleet-strip {
+      width: 100%;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .robot-mini-card {
+      background-color: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-radius: 7px;
+      padding: 8px 10px;
+      font-size: 11.5px;
+    }
+
+    .robot-mini-top {
+      display: flex;
+      justify-content: space-between;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .bar-bg {
+      width: 100%;
+      height: 5px;
+      background-color: #1e293b;
+      border-radius: 99px;
+      overflow: hidden;
+      margin-bottom: 4px;
+    }
+
+    .bar-fill {
+      height: 100%;
+      transition: width 0.2s ease;
+    }
+
+    /* Right Telemetry */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+      margin-bottom: 10px;
+    }
+
+    .kpi-box {
+      background-color: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 9px 11px;
+    }
+
+    .kpi-label {
+      font-size: 10.5px;
+      color: var(--text-secondary);
+      margin-bottom: 3px;
+    }
+
+    .kpi-value {
+      font-size: 19px;
+      font-weight: 700;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      color: var(--text-primary);
+    }
+
+    .kpi-sub {
+      font-size: 10px;
+      color: var(--accent-emerald);
+      margin-top: 2px;
+    }
+
+    /* Live Formula Preview Card */
+    .formula-card {
+      background-color: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 9px 11px;
+      margin-bottom: 10px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 11px;
+      line-height: 1.5;
+      color: #cbd5e1;
+    }
+
+    /* Benchmark Table */
+    .bench-box {
+      margin-top: 10px;
+      background-color: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 10px;
+      display: none;
+    }
+
+    .bench-box.visible {
+      display: block;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 10.5px;
+      margin-top: 6px;
+    }
+
+    th, td {
+      padding: 5px 5px;
+      text-align: left;
+      border-bottom: 1px solid #1e293b;
+    }
+
+    th {
+      color: var(--text-secondary);
+      font-weight: 600;
+    }
+
+    td.num {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-weight: 600;
+    }
+
+    .gain-tag {
+      color: var(--accent-emerald);
+      font-weight: 700;
+    }
+
+    /* AI Decision Log */
+    .log-feed {
+      background-color: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 10px;
+      height: 235px;
+      overflow-y: auto;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 11px;
+      line-height: 1.5;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .log-entry {
+      padding-bottom: 5px;
+      border-bottom: 1px solid rgba(51, 65, 85, 0.45);
+    }
+
+    .tag-bayes { color: var(--accent-purple); font-weight: 700; }
+    .tag-astar { color: var(--accent-cyan); font-weight: 700; }
+    .tag-mdp { color: var(--accent-emerald); font-weight: 700; }
+    .tag-reroute { color: var(--accent-rose); font-weight: 700; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <div class="brand-badge">AIF1303 // FINAL PROJECT</div>
+      <div>
+        <h1>Smart Warehouse Delivery Robot — AI Decision System</h1>
+        <div class="subtitle">Heuristic Search (A*) &bull; Bayesian Sensor Inference &bull; Markov Decision Process (Value Iteration)</div>
+      </div>
+    </div>
+    <div class="algo-pills">
+      <div class="pill">Week 2: <strong>A* vs. BFS Search</strong></div>
+      <div class="pill">Week 6: <strong>Bayesian Inference</strong></div>
+      <div class="pill">Week 5: <strong>MDP Value Iteration</strong></div>
+    </div>
+  </header>
+
+  <main class="dashboard">
+    <!-- LEFT SIDEBAR: CONTROL PANEL -->
+    <aside class="card">
+      <div class="card-title">Simulation Controls</div>
+      <div class="btn-grid">
+        <button id="btnToggleRun" class="primary">Pause Sim</button>
+        <button id="btnReset">Reset Warehouse</button>
+      </div>
+      <button id="btnSpawnOrders" class="accent">+ Spawn 5 Random Orders</button>
+
+      <div class="control-group" style="margin-top:10px;">
+        <div class="control-label">
+          <span>Simulation Speed</span>
+          <span class="val" id="speedLabel">1.5x</span>
+        </div>
+        <input type="range" id="speedSlider" min="0.5" max="4.0" step="0.5" value="1.5" />
+      </div>
+
+      <div class="section-divider"></div>
+
+      <div class="card-title">AI Algorithm Toggles</div>
+
+      <div class="control-group">
+        <div class="control-label">
+          <span>1. Pathfinding (Week 2)</span>
+        </div>
+        <div class="toggle-group" id="pathAlgoToggle">
+          <button class="toggle-btn active" data-val="ASTAR">A* (Manhattan)</button>
+          <button class="toggle-btn" data-val="BFS">BFS (Uninformed)</button>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <div class="control-label">
+          <span>2. Uncertainty &amp; Policy (Weeks 5–6)</span>
+        </div>
+        <div class="toggle-group" id="policyAlgoToggle">
+          <button class="toggle-btn active" data-val="BAYES_MDP">Bayes + MDP</button>
+          <button class="toggle-btn" data-val="NAIVE">Naive Sensor</button>
+        </div>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <div class="card-title">Bayes &amp; MDP Parameters</div>
+
+      <div class="control-group">
+        <div class="control-label">
+          <span>Prior Obstacle P(O)</span>
+          <span class="val" id="priorLabel">0.30</span>
+        </div>
+        <input type="range" id="priorSlider" min="0.05" max="0.85" step="0.05" value="0.30" />
+      </div>
+
+      <div class="control-group">
+        <div class="control-label">
+          <span>Sensitivity P(BLOCKED|O)</span>
+          <span class="val" id="sensLabel">0.80</span>
+        </div>
+        <input type="range" id="sensSlider" min="0.50" max="0.99" step="0.05" value="0.80" />
+      </div>
+
+      <div class="control-group">
+        <div class="control-label">
+          <span>False Alarm P(BLOCKED|&not;O)</span>
+          <span class="val" id="falseLabel">0.20</span>
+        </div>
+        <input type="range" id="falseSlider" min="0.01" max="0.50" step="0.05" value="0.20" />
+      </div>
+
+      <div class="control-group">
+        <div class="control-label">
+          <span>MDP Discount Factor (&gamma;)</span>
+          <span class="val" id="gammaLabel">0.90</span>
+        </div>
+        <input type="range" id="gammaSlider" min="0.50" max="0.99" step="0.05" value="0.90" />
+      </div>
+
+      <div class="section-divider"></div>
+
+      <div class="card-title">Warehouse Map Legend</div>
+      <div class="legend-list">
+        <div class="legend-item"><span class="swatch" style="background:#334155;border:1px solid #64748b;"></span>Shelf Rack</div>
+        <div class="legend-item"><span class="swatch" style="background:#f43f5e;"></span>Spilled Box</div>
+        <div class="legend-item"><span class="swatch" style="background:rgba(245,158,11,0.22);border:1px dashed #f59e0b;"></span>Sensor Zone</div>
+        <div class="legend-item"><span class="swatch" style="background:rgba(34,197,94,0.3);border:1px solid #22c55e;"></span>Charger Pad</div>
+        <div class="legend-item"><span class="swatch" style="background:rgba(168,85,247,0.3);border:1px solid #a855f7;"></span>Drop-Off Bay</div>
+        <div class="legend-item"><span class="swatch" style="background:rgba(56,189,248,0.22);border:1px solid #38bdf8;"></span>Explored Node</div>
+      </div>
+
+      <div class="hint-box">
+        <strong>Interactive Grid:</strong> Click any aisle cell to drop or remove a <em>Spilled Box</em> obstacle, triggering real-time A* path recalculation.
+      </div>
+    </aside>
+
+    <!-- CENTER STAGE: 2D WAREHOUSE CANVAS -->
+    <section class="card canvas-container">
+      <div class="canvas-header">
+        <div class="card-title" style="margin:0;">2D Warehouse Floor (16 &times; 12 Grid)</div>
+        <div class="status-indicator">
+          <span class="dot" id="runDot"></span>
+          <span id="simStatusText">RUNNING &bull; Active Queue: 0 orders</span>
+        </div>
+      </div>
+
+      <canvas id="warehouseCanvas" width="768" height="576"></canvas>
+
+      <div class="fleet-strip" id="fleetStrip"></div>
+    </section>
+
+    <!-- RIGHT SIDEBAR: AI TELEMETRY & BENCHMARKING -->
+    <aside class="card">
+      <div class="card-title">Live Testing &amp; Telemetry</div>
+
+      <div class="kpi-grid">
+        <div class="kpi-box">
+          <div class="kpi-label">Orders Completed</div>
+          <div class="kpi-value" id="kpiOrders">0</div>
+          <div class="kpi-sub" id="kpiPending">0 pending in queue</div>
+        </div>
+        <div class="kpi-box">
+          <div class="kpi-label">Total Distance</div>
+          <div class="kpi-value" id="kpiDistance">0</div>
+          <div class="kpi-sub">grid cells traversed</div>
+        </div>
+        <div class="kpi-box">
+          <div class="kpi-label">Nodes Explored</div>
+          <div class="kpi-value" id="kpiNodes">0</div>
+          <div class="kpi-sub" id="kpiSearchMode">Mode: A* Heuristic</div>
+        </div>
+        <div class="kpi-box">
+          <div class="kpi-label">Hazards Mitigated</div>
+          <div class="kpi-value" id="kpiHazards">0</div>
+          <div class="kpi-sub" id="kpiCollisions">0 collisions suffered</div>
+        </div>
+      </div>
+
+      <!-- Live Practice 5 & 6 Mathematical Verification Preview -->
+      <div class="formula-card" id="liveMathBox">
+        <div style="color:#38bdf8;font-weight:700;margin-bottom:2px;">Live Bayes + MDP Calibration (Weeks 5–6):</div>
+        <div id="liveMathText">Calculating posterior &amp; Bellman Q-values...</div>
+      </div>
+
+      <button id="btnBenchmark" class="benchmark-btn">Run Benchmark Test (10 Runs)</button>
+
+      <div class="bench-box" id="benchmarkBox">
+        <div class="card-title" style="margin-bottom:4px;font-size:11px;">
+          <span>10-Run Comparative Results</span>
+          <span class="gain-tag">A*+Bayes+MDP Gain</span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Metric (10-Run Avg)</th>
+              <th>A*+Bayes+MDP</th>
+              <th>BFS+Naive</th>
+              <th>Gain</th>
+            </tr>
+          </thead>
+          <tbody id="benchTableBody"></tbody>
+        </table>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <div class="card-title">
+        <span>AI Decision &amp; Inference Log</span>
+        <button id="btnClearLog" style="padding:2px 8px;font-size:10px;">Clear</button>
+      </div>
+      <div class="log-feed" id="aiLogFeed"></div>
+    </aside>
+  </main>
+
+  <script>
+    /**
+     * =========================================================================
+     * CLASS 1: Grid
+     * Represents the 16x12 warehouse layout: static shelf racks, charging pads,
+     * drop-off zones, noisy sensor checkpoints, and user-toggled obstacles.
+     * =========================================================================
+     */
+    class Grid {
+      constructor(cols = 16, rows = 12) {
+        this.cols = cols;
+        this.rows = rows;
+        this.cells = [];
+        this.chargers = [
+          { x: 0, y: 0, label: "CHG-1" },
+          { x: 0, y: rows - 1, label: "CHG-2" }
+        ];
+        this.dropoffs = [
+          { x: cols - 1, y: 2, label: "DROP-A" },
+          { x: cols - 1, y: rows - 3, label: "DROP-B" }
+        ];
+        this.sensorCheckpoints = [];
+        this.shelfPickups = [];
+        this.resetLayout(0.30);
+      }
+
+      resetLayout(priorObstacle = 0.30, rng = Math.random) {
+        // 0 = EMPTY AISLE, 1 = SHELF RACK, 2 = DYNAMIC OBSTACLE ("Spilled Box")
+        this.cells = Array.from({ length: this.rows }, () => Array(this.cols).fill(0));
+        this.shelfPickups = [];
+
+        const rackCols = [3, 4, 7, 8, 11, 12];
+        const rackRows = [2, 3, 4, 7, 8, 9];
+        for (const r of rackRows) {
+          for (const c of rackCols) {
+            this.cells[r][c] = 1;
+          }
+        }
+
+        // Sensor checkpoints placed in key aisle corridors (Week 6 scenario)
+        const coords = [
+          { id: "S1", x: 5, y: 3 },
+          { id: "S2", x: 6, y: 8 },
+          { id: "S3", x: 10, y: 3 },
+          { id: "S4", x: 10, y: 8 }
+        ];
+        this.sensorCheckpoints = coords.map(pt => ({
+          ...pt,
+          hasObstacle: rng() < priorObstacle,
+          lastSignal: null
+        }));
+
+        // Valid pickup cells adjacent to shelves (excluding special zones & sensors)
+        for (let y = 0; y < this.rows; y++) {
+          for (let x = 0; x < this.cols; x++) {
+            if (this.cells[y][x] === 0 && !this.isSpecialZone(x, y) && !this.getSensorAt(x, y)) {
+              const adjShelf = this.getNeighbors(x, y, true).some(n => this.cells[n.y][n.x] === 1);
+              if (adjShelf) {
+                this.shelfPickups.push({ x, y });
+              }
+            }
+          }
+        }
+      }
+
+      refreshSensors(priorObstacle, rng = Math.random) {
+        for (const sc of this.sensorCheckpoints) {
+          sc.hasObstacle = rng() < priorObstacle;
+          sc.lastSignal = null;
+        }
+      }
+
+      getSensorAt(x, y) {
+        return this.sensorCheckpoints.find(s => s.x === x && s.y === y) || null;
+      }
+
+      isSpecialZone(x, y) {
+        return (
+          this.chargers.some(c => c.x === x && c.y === y) ||
+          this.dropoffs.some(d => d.x === x && d.y === y)
+        );
+      }
+
+      inBounds(x, y) {
+        return x >= 0 && x < this.cols && y >= 0 && y < this.rows;
+      }
+
+      isWalkable(x, y, tempBlockedSet = null) {
+        if (!this.inBounds(x, y) || this.cells[y][x] !== 0) return false;
+        if (tempBlockedSet && tempBlockedSet.has(`${x},${y}`)) return false;
+        return true;
+      }
+
+      toggleDynamicObstacle(x, y, occupiedPositions = []) {
+        if (!this.inBounds(x, y)) return null;
+        if (this.cells[y][x] === 1 || this.isSpecialZone(x, y)) return null;
+        if (occupiedPositions.some(p => p.x === x && p.y === y)) return null;
+
+        if (this.cells[y][x] === 0) {
+          this.cells[y][x] = 2;
+          return "ADDED";
+        } else if (this.cells[y][x] === 2) {
+          this.cells[y][x] = 0;
+          return "REMOVED";
+        }
+        return null;
+      }
+
+      getNeighbors(x, y, includeBlocked = false, tempBlockedSet = null) {
+        const dirs = [
+          { dx: 0, dy: -1 },
+          { dx: 1, dy: 0 },
+          { dx: 0, dy: 1 },
+          { dx: -1, dy: 0 }
+        ];
+        const result = [];
+        for (const { dx, dy } of dirs) {
+          const nx = x + dx;
+          const ny = y + dy;
+          if (!this.inBounds(nx, ny)) continue;
+          if (includeBlocked || this.isWalkable(nx, ny, tempBlockedSet)) {
+            result.push({ x: nx, y: ny });
+          }
+        }
+        return result;
+      }
+    }
+
+    /**
+     * =========================================================================
+     * CLASS 2: AStarPathfinder (Week 2: Informed vs. Uninformed Search)
+     * Implements A* Search minimizing f(n) = g(n) + h(n) with admissible
+     * Manhattan distance heuristic, plus Breadth-First Search (BFS).
+     * =========================================================================
+     */
+    class AStarPathfinder {
+      constructor(grid) {
+        this.grid = grid;
+      }
+
+      manhattan(a, b) {
+        return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+      }
+
+      findPath(start, goal, algorithm = "ASTAR", tempBlockedSet = null) {
+        if (algorithm === "BFS") {
+          return this.bfs(start, goal, tempBlockedSet);
+        }
+        return this.aStar(start, goal, tempBlockedSet);
+      }
+
+      aStar(start, goal, tempBlockedSet = null) {
+        const key = (p) => `${p.x},${p.y}`;
+        const openSet = [{ pos: start, g: 0, f: this.manhattan(start, goal) }];
+        const cameFrom = new Map();
+        const gScore = new Map([[key(start), 0]]);
+        const explored = [];
+        const closedSet = new Set();
+
+        while (openSet.length > 0) {
+          openSet.sort((a, b) => a.f - b.f || a.g - b.g);
+          const current = openSet.shift();
+          const cKey = key(current.pos);
+
+          if (closedSet.has(cKey)) continue;
+          closedSet.add(cKey);
+          explored.push(current.pos);
+
+          if (current.pos.x === goal.x && current.pos.y === goal.y) {
+            return {
+              path: this.reconstructPath(cameFrom, start, goal),
+              explored,
+              cost: current.g
+            };
+          }
+
+          for (const neighbor of this.grid.getNeighbors(current.pos.x, current.pos.y, false, tempBlockedSet)) {
+            const nKey = key(neighbor);
+            if (closedSet.has(nKey)) continue;
+
+            const tentativeG = current.g + 1;
+            if (tentativeG < (gScore.get(nKey) ?? Infinity)) {
+              cameFrom.set(nKey, current.pos);
+              gScore.set(nKey, tentativeG);
+              const f = tentativeG + this.manhattan(neighbor, goal);
+              openSet.push({ pos: neighbor, g: tentativeG, f });
+            }
+          }
+        }
+
+        return { path: [], explored, cost: Infinity };
+      }
+
+      bfs(start, goal, tempBlockedSet = null) {
+        const key = (p) => `${p.x},${p.y}`;
+        const queue = [start];
+        const cameFrom = new Map();
+        const visited = new Set([key(start)]);
+        const explored = [];
+
+        while (queue.length > 0) {
+          const current = queue.shift();
+          explored.push(current);
+
+          if (current.x === goal.x && current.y === goal.y) {
+            const path = this.reconstructPath(cameFrom, start, goal);
+            return {
+              path,
+              explored,
+              cost: Math.max(0, path.length - 1)
+            };
+          }
+
+          for (const neighbor of this.grid.getNeighbors(current.x, current.y, false, tempBlockedSet)) {
+            const nKey = key(neighbor);
+            if (!visited.has(nKey)) {
+              visited.add(nKey);
+              cameFrom.set(nKey, current);
+              queue.push(neighbor);
+            }
+          }
+        }
+
+        return { path: [], explored, cost: Infinity };
+      }
+
+      reconstructPath(cameFrom, start, goal) {
+        const key = (p) => `${p.x},${p.y}`;
+        const path = [];
+        let curr = goal;
+        while (curr && !(curr.x === start.x && curr.y === start.y)) {
+          path.push(curr);
+          curr = cameFrom.get(key(curr));
+        }
+        path.reverse();
+        return path;
+      }
+    }
+
+    /**
+     * =========================================================================
+     * CLASS 3: BayesianSensorModel (Week 6, Practice 6)
+     * Computes posterior obstacle probability P(Obstacle | Sensor Reading)
+     * using Bayes' Theorem to handle noisy warehouse LiDAR/ultrasonic readings.
+     * =========================================================================
+     */
+    class BayesianSensorModel {
+      simulateSensorReading(hasObstacle, pBlockedGivenO = 0.80, pBlockedGivenC = 0.20, rng = Math.random) {
+        const pBlocked = hasObstacle ? pBlockedGivenO : pBlockedGivenC;
+        return rng() < pBlocked ? "BLOCKED" : "CLEAR";
+      }
+
+      updateBelief(priorObstacle, reading, pBlockedGivenO = 0.80, pBlockedGivenC = 0.20) {
+        const pEGivenO = reading === "BLOCKED" ? pBlockedGivenO : 1.0 - pBlockedGivenO;
+        const pEGivenC = reading === "BLOCKED" ? pBlockedGivenC : 1.0 - pBlockedGivenC;
+
+        const scoreObstacle = priorObstacle * pEGivenO;
+        const scoreClear = (1.0 - priorObstacle) * pEGivenC;
+        const evidence = scoreObstacle + scoreClear;
+
+        if (evidence === 0) {
+          return { prior: priorObstacle, reading, evidence: 0, posterior: priorObstacle };
+        }
+
+        const posterior = scoreObstacle / evidence;
+        return {
+          prior: priorObstacle,
+          reading,
+          scoreObstacle: Number(scoreObstacle.toFixed(4)),
+          scoreClear: Number(scoreClear.toFixed(4)),
+          evidence: Number(evidence.toFixed(4)),
+          posterior: Number(posterior.toFixed(4))
+        };
+      }
+    }
+
+    /**
+     * =========================================================================
+     * CLASS 4: MDPValueIterationSolver (Week 5, Practice 5)
+     * Models corridor traversal under uncertainty as a Markov Decision Process
+     * and solves the Bellman Optimality Equation via Value Iteration.
+     * =========================================================================
+     */
+    class MDPValueIterationSolver {
+      solve(pObstacle, gamma = 0.90, theta = 0.001, rGoal = 10.0, rCrash = -15.0, rStep = -0.2) {
+        const states = ["Corridor_Entry", "Detour_Bypass"];
+        const actions = ["PROCEED", "DETOUR"];
+        let V = { Corridor_Entry: 0.0, Detour_Bypass: 0.0 };
+
+        const transitions = (s, a) => {
+          if (s === "Corridor_Entry") {
+            if (a === "PROCEED") {
+              // Risk traversing uncertain corridor: collision with pObstacle, goal with 1 - pObstacle
+              return [
+                { prob: pObstacle, next: "Collision", reward: rCrash },
+                { prob: 1.0 - pObstacle, next: "Delivered", reward: rGoal }
+              ];
+            }
+            if (a === "DETOUR") {
+              // Switch to safe detour aisle (90% transition success, 10% slip)
+              return [
+                { prob: 0.90, next: "Detour_Bypass", reward: rStep },
+                { prob: 0.10, next: "Corridor_Entry", reward: rStep }
+              ];
+            }
+          }
+          if (s === "Detour_Bypass") {
+            if (a === "PROCEED") {
+              return [
+                { prob: 0.90, next: "Delivered", reward: rGoal - 2.0 },
+                { prob: 0.10, next: "Detour_Bypass", reward: rStep }
+              ];
+            }
+            if (a === "DETOUR") {
+              return [{ prob: 1.0, next: "Detour_Bypass", reward: rStep }];
+            }
+          }
+          return [];
+        };
+
+        let iterations = 0;
+        while (true) {
+          let delta = 0.0;
+          const nextV = { ...V };
+
+          for (const s of states) {
+            const qVals = actions.map(a =>
+              transitions(s, a).reduce(
+                (sum, t) => sum + t.prob * (t.reward + gamma * (V[t.next] ?? 0.0)),
+                0.0
+              )
+            );
+            nextV[s] = Math.max(...qVals);
+            delta = Math.max(delta, Math.abs(nextV[s] - V[s]));
+          }
+
+          V = nextV;
+          iterations++;
+          if (delta < theta || iterations > 100) break;
+        }
+
+        const qEntry = {};
+        for (const a of actions) {
+          qEntry[a] = Number(
+            transitions("Corridor_Entry", a)
+              .reduce((sum, t) => sum + t.prob * (t.reward + gamma * (V[t.next] ?? 0.0)), 0.0)
+              .toFixed(2)
+          );
+        }
+
+        const bestAction = qEntry.PROCEED >= qEntry.DETOUR ? "PROCEED" : "DETOUR";
+        return { V, Q: qEntry, bestAction, iterations };
+      }
+    }
+
+    /**
+     * =========================================================================
+     * CLASS 5: WarehouseSim
+     * Orchestrates 2D Canvas visualization, 3 autonomous robots, real-time
+     * Bayesian + MDP checkpoint decisions, dynamic obstacle rerouting, and
+     * 10-run comparative benchmarking.
+     * =========================================================================
+     */
+    class WarehouseSim {
+      constructor(canvasId) {
+        this.canvas = document.getElementById(canvasId);
+        this.ctx = this.canvas.getContext("2d");
+        this.tileSize = 48; // 16*48 = 768, 12*48 = 576
+
+        this.grid = new Grid(16, 12);
+        this.pathfinder = new AStarPathfinder(this.grid);
+        this.bayes = new BayesianSensorModel();
+        this.mdp = new MDPValueIterationSolver();
+
+        this.pathAlgo = "ASTAR";        // 'ASTAR' | 'BFS'
+        this.policyAlgo = "BAYES_MDP";  // 'BAYES_MDP' | 'NAIVE'
+        this.speed = 1.5;
+        this.running = true;
+
+        // Interactive Bayes & MDP parameters (Practice 5 & 6 defaults)
+        this.params = {
+          prior: 0.30,
+          sensitivity: 0.80,
+          falseAlarm: 0.20,
+          gamma: 0.90
+        };
+
+        this.robots = [];
+        this.orders = [];
+        this.orderCounter = 100;
+
+        this.metrics = {
+          ordersCompleted: 0,
+          totalDistance: 0,
+          nodesExplored: 0,
+          hazardsMitigated: 0,
+          collisions: 0
+        };
+
+        this.lastFrameTime = performance.now();
+        this.dispatchCooldown = 0;
+
+        this.initSimulation();
+        this.bindEvents();
+        this.updateLiveMathPreview();
+        requestAnimationFrame((t) => this.loop(t));
+      }
+
+      initSimulation() {
+        this.grid.resetLayout(this.params.prior);
+        this.orders = [];
+        this.orderCounter = 100;
+        this.metrics = {
+          ordersCompleted: 0,
+          totalDistance: 0,
+          nodesExplored: 0,
+          hazardsMitigated: 0,
+          collisions: 0
+        };
+
+        this.robots = [
+          {
+            id: "R1",
+            color: "#38bdf8",
+            x: 1, y: 1, px: 1, py: 1,
+            battery: 92,
+            state: "IDLE",
+            order: null,
+            path: [],
+            explored: [],
+            avoidedSensors: new Set(),
+            checkedSensors: new Set(),
+            stunTimer: 0
+          },
+          {
+            id: "R2",
+            color: "#22c55e",
+            x: 5, y: 5, px: 5, py: 5,
+            battery: 86,
+            state: "IDLE",
+            order: null,
+            path: [],
+            explored: [],
+            avoidedSensors: new Set(),
+            checkedSensors: new Set(),
+            stunTimer: 0
+          },
+          {
+            id: "R3",
+            color: "#a855f7",
+            x: 9, y: 10, px: 9, py: 10,
+            battery: 95,
+            state: "IDLE",
+            order: null,
+            path: [],
+            explored: [],
+            avoidedSensors: new Set(),
+            checkedSensors: new Set(),
+            stunTimer: 0
+          }
+        ];
+
+        const logFeed = document.getElementById("aiLogFeed");
+        if (logFeed) logFeed.innerHTML = "";
+
+        this.log("ASTAR", "Warehouse initialized (16x12 grid, 3 robots, 4 sensor checkpoints).");
+        this.spawnOrders(5);
+      }
+
+      log(type, message) {
+        const feed = document.getElementById("aiLogFeed");
+        if (!feed) return;
+        const ts = new Date().toTimeString().split(" ")[0];
+        const tagMap = {
+          BAYES: '<span class="tag-bayes">[BAYES]</span>',
+          ASTAR: `<span class="tag-astar">[${this.pathAlgo}]</span>`,
+          MDP: '<span class="tag-mdp">[MDP]</span>',
+          REROUTE: '<span class="tag-reroute">[REROUTE]</span>'
+        };
+        const entry = document.createElement("div");
+        entry.className = "log-entry";
+        entry.innerHTML = `<span style="color:#64748b;">${ts}</span> ${tagMap[type] || ""} ${message}`;
+        feed.prepend(entry);
+        while (feed.children.length > 45) {
+          feed.removeChild(feed.lastChild);
+        }
+      }
+
+      updateLiveMathPreview() {
+        const bBlocked = this.bayes.updateBelief(
+          this.params.prior,
+          "BLOCKED",
+          this.params.sensitivity,
+          this.params.falseAlarm
+        );
+        const bClear = this.bayes.updateBelief(
+          this.params.prior,
+          "CLEAR",
+          this.params.sensitivity,
+          this.params.falseAlarm
+        );
+        const mBlocked = this.mdp.solve(bBlocked.posterior, this.params.gamma);
+        const mClear = this.mdp.solve(bClear.posterior, this.params.gamma);
+
+        const box = document.getElementById("liveMathText");
+        if (box) {
+          box.innerHTML =
+            `If <b>BLOCKED</b> &rarr; P(O|E)=<b>${bBlocked.posterior.toFixed(4)}</b> &rarr; Q(PROCEED)=${mBlocked.Q.PROCEED}, Q(DETOUR)=${mBlocked.Q.DETOUR} &rarr; <span style="color:#f59e0b;font-weight:700;">${mBlocked.bestAction}</span><br>` +
+            `If <b>CLEAR</b> &nbsp;&nbsp;&rarr; P(O|E)=<b>${bClear.posterior.toFixed(4)}</b> &rarr; Q(PROCEED)=${mClear.Q.PROCEED}, Q(DETOUR)=${mClear.Q.DETOUR} &rarr; <span style="color:#22c55e;font-weight:700;">${mClear.bestAction}</span>`;
+        }
+      }
+
+      spawnOrders(count = 5, rng = Math.random) {
+        this.grid.refreshSensors(this.params.prior, rng);
+        for (const r of this.robots) {
+          r.checkedSensors.clear();
+          r.avoidedSensors.clear();
+        }
+
+        const availablePickups = this.grid.shelfPickups.filter(
+          sp => !this.orders.some(o => o.pickup.x === sp.x && o.pickup.y === sp.y)
+        );
+
+        let spawned = 0;
+        for (let i = 0; i < count && availablePickups.length > 0; i++) {
+          const pIdx = Math.floor(rng() * availablePickups.length);
+          const pickup = availablePickups.splice(pIdx, 1)[0];
+          const dropoff = this.grid.dropoffs[Math.floor(rng() * this.grid.dropoffs.length)];
+          const urgency = rng() < 0.4 ? Math.floor(7 + rng() * 4) : Math.floor(2 + rng() * 4);
+
+          this.orderCounter++;
+          this.orders.push({
+            id: `ORD-${this.orderCounter}`,
+            pickup,
+            dropoff,
+            urgency,
+            assignedTo: null
+          });
+          spawned++;
+        }
+
+        if (spawned > 0) {
+          this.log("ASTAR", `Spawned ${spawned} parcel orders & refreshed corridor sensor states.`);
+          this.dispatchIdleRobots();
+        }
+      }
+
+      planRobotRoute(robot, target, reasonTag = "ASTAR") {
+        const res = this.pathfinder.findPath(
+          { x: robot.x, y: robot.y },
+          target,
+          this.pathAlgo,
+          robot.avoidedSensors
+        );
+        robot.path = res.path;
+        robot.explored = res.explored;
+        this.metrics.nodesExplored += res.explored.length;
+
+        if (res.path.length > 0) {
+          this.log(
+            reasonTag,
+            `${robot.id} planned ${res.path.length}-step route to (${target.x},${target.y}) [explored ${res.explored.length} nodes].`
+          );
+        } else if (robot.x !== target.x || robot.y !== target.y) {
+          // If avoiding sensor blocked all paths, clear avoidance and retry
+          if (robot.avoidedSensors.size > 0) {
+            robot.avoidedSensors.clear();
+            const fallback = this.pathfinder.findPath({ x: robot.x, y: robot.y }, target, this.pathAlgo);
+            robot.path = fallback.path;
+            robot.explored = fallback.explored;
+          } else {
+            this.log("REROUTE", `${robot.id} target (${target.x},${target.y}) currently blocked!`);
+          }
+        }
+        return res;
+      }
+
+      dispatchIdleRobots() {
+        const unassigned = this.orders.filter(o => !o.assignedTo);
+
+        for (const robot of this.robots) {
+          if (robot.state !== "IDLE") continue;
+
+          // Low battery check -> route to nearest charging pad
+          if (robot.battery <= 25) {
+            let bestCharger = this.grid.chargers[0];
+            let bestD = Infinity;
+            for (const chg of this.grid.chargers) {
+              const d = this.pathfinder.manhattan(robot, chg);
+              if (d < bestD) {
+                bestD = d;
+                bestCharger = chg;
+              }
+            }
+            robot.state = "TO_CHARGER";
+            robot.avoidedSensors.clear();
+            this.log("MDP", `${robot.id}: Battery ${robot.battery.toFixed(0)}% &rarr; Routing to ${bestCharger.label}.`);
+            this.planRobotRoute(robot, bestCharger, "ASTAR");
+            continue;
+          }
+
+          if (unassigned.length === 0) continue;
+
+          // Pick nearest order weighted by urgency
+          let bestIdx = 0;
+          let bestScore = Infinity;
+          for (let i = 0; i < unassigned.length; i++) {
+            const ord = unassigned[i];
+            const dist = this.pathfinder.manhattan(robot, ord.pickup);
+            const score = dist - ord.urgency * 0.6;
+            if (score < bestScore) {
+              bestScore = score;
+              bestIdx = i;
+            }
+          }
+
+          const chosen = unassigned.splice(bestIdx, 1)[0];
+          chosen.assignedTo = robot.id;
+          robot.order = chosen;
+          robot.state = "TO_PICKUP";
+          robot.checkedSensors.clear();
+          robot.avoidedSensors.clear();
+
+          this.planRobotRoute(robot, chosen.pickup, "ASTAR");
+        }
+      }
+
+      evaluateUpcomingSensor(robot) {
+        if (robot.path.length === 0) return;
+        const nextStep = robot.path[0];
+        const sensor = this.grid.getSensorAt(nextStep.x, nextStep.y);
+        if (!sensor || robot.checkedSensors.has(sensor.id)) return;
+
+        robot.checkedSensors.add(sensor.id);
+        const signal = this.bayes.simulateSensorReading(
+          sensor.hasObstacle,
+          this.params.sensitivity,
+          this.params.falseAlarm
+        );
+        sensor.lastSignal = signal;
+
+        const target =
+          robot.state === "TO_PICKUP" && robot.order
+            ? robot.order.pickup
+            : robot.state === "TO_DROPOFF" && robot.order
+            ? robot.order.dropoff
+            : this.grid.chargers[0];
+
+        if (this.policyAlgo === "BAYES_MDP") {
+          // Week 6: Bayesian Belief Update
+          const bRes = this.bayes.updateBelief(
+            this.params.prior,
+            signal,
+            this.params.sensitivity,
+            this.params.falseAlarm
+          );
+          // Week 5: MDP Value Iteration Decision
+          const mdpRes = this.mdp.solve(bRes.posterior, this.params.gamma);
+
+          this.log(
+            "BAYES",
+            `${robot.id} @ ${sensor.id}(${sensor.x},${sensor.y}): Signal=${signal} &rarr; P(O)=${this.params.prior.toFixed(2)} &rarr; P(O|E)=<b>${bRes.posterior.toFixed(4)}</b>`
+          );
+          this.log(
+            "MDP",
+            `${robot.id} Value Iter (${mdpRes.iterations} iters): Q(PROCEED)=${mdpRes.Q.PROCEED}, Q(DETOUR)=${mdpRes.Q.DETOUR} &rarr; <b>${mdpRes.bestAction}</b>`
+          );
+
+          if (mdpRes.bestAction === "DETOUR") {
+            this.metrics.hazardsMitigated += 1;
+            robot.avoidedSensors.add(`${sensor.x},${sensor.y}`);
+            this.planRobotRoute(robot, target, "REROUTE");
+          }
+        } else {
+          // Naive Sensor Policy: blindly trusts raw signal without Bayes or MDP utility
+          if (signal === "BLOCKED") {
+            robot.avoidedSensors.add(`${sensor.x},${sensor.y}`);
+            this.log("REROUTE", `[NAIVE] ${robot.id} blindly detoured on raw BLOCKED at ${sensor.id}.`);
+            this.planRobotRoute(robot, target, "REROUTE");
+          }
+        }
+      }
+
+      handleObstacleToggle(gx, gy) {
+        const occupied = this.robots.map(r => ({ x: r.x, y: r.y }));
+        const status = this.grid.toggleDynamicObstacle(gx, gy, occupied);
+        if (!status) return;
+
+        this.log("REROUTE", `Spilled Box ${status} at (${gx},${gy}). Checking active routes...`);
+
+        for (const robot of this.robots) {
+          if (robot.path.length === 0) continue;
+          const hitsObstacle = robot.path.some(step => step.x === gx && step.y === gy);
+          if (hitsObstacle) {
+            const target =
+              robot.state === "TO_PICKUP" && robot.order
+                ? robot.order.pickup
+                : robot.state === "TO_DROPOFF" && robot.order
+                ? robot.order.dropoff
+                : robot.path[robot.path.length - 1];
+
+            this.log("REROUTE", `${robot.id} path blocked at (${gx},${gy})! Recomputing via ${this.pathAlgo}...`);
+            this.planRobotRoute(robot, target, "REROUTE");
+          }
+        }
+      }
+
+      update(dt) {
+        if (!this.running) return;
+
+        const moveSpeed = 3.2 * this.speed;
+        this.dispatchCooldown -= dt;
+
+        for (const robot of this.robots) {
+          if (robot.stunTimer > 0) {
+            robot.stunTimer -= dt * this.speed;
+            continue;
+          }
+
+          if (robot.state === "CHARGING") {
+            robot.battery = Math.min(100, robot.battery + 18 * dt * this.speed);
+            if (robot.battery >= 95) {
+              robot.state = "IDLE";
+              robot.explored = [];
+              this.log("MDP", `${robot.id} charged to ${robot.battery.toFixed(0)}% &rarr; Resuming delivery duty.`);
+            }
+            continue;
+          }
+
+          // Check sensor checkpoint right before stepping onto it
+          this.evaluateUpcomingSensor(robot);
+
+          if (robot.path.length > 0) {
+            const nextStep = robot.path[0];
+            const dx = nextStep.x - robot.px;
+            const dy = nextStep.y - robot.py;
+            const dist = Math.hypot(dx, dy);
+
+            if (dist <= moveSpeed * dt) {
+              robot.px = nextStep.x;
+              robot.py = nextStep.y;
+              robot.x = nextStep.x;
+              robot.y = nextStep.y;
+              robot.path.shift();
+
+              this.metrics.totalDistance += 1;
+              robot.battery = Math.max(5, robot.battery - 0.65);
+
+              // Check if robot physically drove onto an unmitigated obstacle in a sensor zone
+              const sensorHere = this.grid.getSensorAt(robot.x, robot.y);
+              if (sensorHere && sensorHere.hasObstacle) {
+                sensorHere.hasObstacle = false;
+                this.metrics.collisions += 1;
+                robot.stunTimer = 1.4;
+                robot.battery = Math.max(5, robot.battery - 6);
+                this.log("REROUTE", `COLLISION! ${robot.id} hit hidden obstacle at ${sensorHere.id} (-6% battery, delay).`);
+              }
+
+              // Check arrival
+              if (robot.path.length === 0) {
+                if (robot.state === "TO_PICKUP" && robot.order) {
+                  robot.state = "TO_DROPOFF";
+                  robot.checkedSensors.clear();
+                  this.planRobotRoute(robot, robot.order.dropoff, "ASTAR");
+                } else if (robot.state === "TO_DROPOFF" && robot.order) {
+                  this.metrics.ordersCompleted += 1;
+                  this.orders = this.orders.filter(o => o.id !== robot.order.id);
+                  this.log("MDP", `${robot.id} delivered ${robot.order.id} at Drop-Off Bay!`);
+                  robot.order = null;
+                  robot.state = "IDLE";
+                  robot.explored = [];
+                } else if (robot.state === "TO_CHARGER") {
+                  robot.state = "CHARGING";
+                  robot.explored = [];
+                }
+              }
+            } else {
+              robot.px += (dx / dist) * moveSpeed * dt;
+              robot.py += (dy / dist) * moveSpeed * dt;
+            }
+          } else if (robot.state !== "IDLE" && this.dispatchCooldown <= 0) {
+            const target =
+              robot.state === "TO_PICKUP" && robot.order
+                ? robot.order.pickup
+                : robot.state === "TO_DROPOFF" && robot.order
+                ? robot.order.dropoff
+                : this.grid.chargers[0];
+            this.planRobotRoute(robot, target, "REROUTE");
+          }
+        }
+
+        if (this.dispatchCooldown <= 0) {
+          this.dispatchIdleRobots();
+          this.dispatchCooldown = 0.75;
+        }
+      }
+
+      draw() {
+        const ctx = this.ctx;
+        const ts = this.tileSize;
+        ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+        // 1. Grid Cells & Shelves
+        for (let y = 0; y < this.grid.rows; y++) {
+          for (let x = 0; x < this.grid.cols; x++) {
+            const px = x * ts;
+            const py = y * ts;
+            const cell = this.grid.cells[y][x];
+
+            ctx.fillStyle = "#0f172a";
+            ctx.fillRect(px, py, ts, ts);
+
+            if (cell === 1) {
+              ctx.fillStyle = "#1e293b";
+              ctx.fillRect(px + 2, py + 2, ts - 4, ts - 4);
+              ctx.strokeStyle = "#475569";
+              ctx.lineWidth = 1.5;
+              ctx.strokeRect(px + 2, py + 2, ts - 4, ts - 4);
+
+              ctx.beginPath();
+              ctx.moveTo(px + 6, py + ts / 2);
+              ctx.lineTo(px + ts - 6, py + ts / 2);
+              ctx.stroke();
+            } else if (cell === 2) {
+              ctx.fillStyle = "rgba(244, 63, 94, 0.25)";
+              ctx.fillRect(px + 4, py + 4, ts - 8, ts - 8);
+              ctx.strokeStyle = "#f43f5e";
+              ctx.lineWidth = 2;
+              ctx.strokeRect(px + 4, py + 4, ts - 8, ts - 8);
+
+              ctx.fillStyle = "#fda4af";
+              ctx.font = "bold 10px monospace";
+              ctx.textAlign = "center";
+              ctx.fillText("BOX", px + ts / 2, py + ts / 2 + 3);
+            }
+
+            ctx.strokeStyle = "rgba(51, 65, 85, 0.45)";
+            ctx.lineWidth = 1;
+            ctx.strokeRect(px, py, ts, ts);
+          }
+        }
+
+        // 2. Sensor Checkpoints (Week 6 Bayesian Zones)
+        for (const sc of this.grid.sensorCheckpoints) {
+          const px = sc.x * ts;
+          const py = sc.y * ts;
+          ctx.save();
+          ctx.fillStyle = "rgba(245, 158, 11, 0.14)";
+          ctx.fillRect(px + 3, py + 3, ts - 6, ts - 6);
+          ctx.strokeStyle = "#f59e0b";
+          ctx.setLineDash([3, 3]);
+          ctx.lineWidth = 1.4;
+          ctx.strokeRect(px + 3, py + 3, ts - 6, ts - 6);
+          ctx.fillStyle = "#fcd34d";
+          ctx.font = "bold 9px monospace";
+          ctx.textAlign = "center";
+          ctx.fillText(sc.id, px + ts / 2, py + ts - 7);
+          ctx.restore();
+        }
+
+        // 3. Charging Stations
+        for (const chg of this.grid.chargers) {
+          const px = chg.x * ts;
+          const py = chg.y * ts;
+          ctx.fillStyle = "rgba(34, 197, 94, 0.18)";
+          ctx.fillRect(px + 3, py + 3, ts - 6, ts - 6);
+          ctx.strokeStyle = "#22c55e";
+          ctx.lineWidth = 1.8;
+          ctx.strokeRect(px + 3, py + 3, ts - 6, ts - 6);
+
+          ctx.fillStyle = "#86efac";
+          ctx.font = "bold 10px monospace";
+          ctx.textAlign = "center";
+          ctx.fillText("CHG", px + ts / 2, py + ts / 2 + 4);
+        }
+
+        // 4. Drop-Off Zones
+        for (const drop of this.grid.dropoffs) {
+          const px = drop.x * ts;
+          const py = drop.y * ts;
+          ctx.fillStyle = "rgba(168, 85, 247, 0.22)";
+          ctx.fillRect(px + 3, py + 3, ts - 6, ts - 6);
+          ctx.strokeStyle = "#a855f7";
+          ctx.lineWidth = 1.8;
+          ctx.strokeRect(px + 3, py + 3, ts - 6, ts - 6);
+
+          ctx.fillStyle = "#e9d5ff";
+          ctx.font = "bold 10px monospace";
+          ctx.textAlign = "center";
+          ctx.fillText("DROP", px + ts / 2, py + ts / 2 + 4);
+        }
+
+        // 5. Explored Nodes Overlay (A* vs BFS)
+        for (const robot of this.robots) {
+          if (!robot.explored || robot.explored.length === 0) continue;
+          ctx.fillStyle =
+            this.pathAlgo === "ASTAR"
+              ? "rgba(56, 189, 248, 0.12)"
+              : "rgba(245, 158, 11, 0.12)";
+          for (const node of robot.explored) {
+            ctx.fillRect(node.x * ts + 4, node.y * ts + 4, ts - 8, ts - 8);
+          }
+        }
+
+        // 6. Pending Parcels
+        for (const order of this.orders) {
+          const carried = this.robots.some(
+            r => r.order && r.order.id === order.id && r.state === "TO_DROPOFF"
+          );
+          if (carried) continue;
+
+          const cx = order.pickup.x * ts + ts / 2;
+          const cy = order.pickup.y * ts + ts / 2;
+          const isUrgent = order.urgency >= 7;
+
+          ctx.fillStyle = isUrgent ? "#f43f5e" : "#f59e0b";
+          ctx.beginPath();
+          ctx.roundRect(cx - 11, cy - 11, 22, 22, 4);
+          ctx.fill();
+
+          ctx.fillStyle = "#0f172a";
+          ctx.font = "bold 9px monospace";
+          ctx.textAlign = "center";
+          ctx.fillText(isUrgent ? "URG" : "PKG", cx, cy + 3);
+        }
+
+        // 7. Planned Path Lines
+        for (const robot of this.robots) {
+          if (robot.path.length === 0) continue;
+          ctx.save();
+          ctx.strokeStyle = robot.color;
+          ctx.lineWidth = 2.5;
+          ctx.setLineDash([5, 4]);
+          ctx.beginPath();
+          ctx.moveTo(robot.px * ts + ts / 2, robot.py * ts + ts / 2);
+          for (const step of robot.path) {
+            ctx.lineTo(step.x * ts + ts / 2, step.y * ts + ts / 2);
+          }
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        // 8. Robots + Battery Bars
+        for (const robot of this.robots) {
+          const cx = robot.px * ts + ts / 2;
+          const cy = robot.py * ts + ts / 2;
+
+          ctx.fillStyle = robot.color + "33";
+          ctx.beginPath();
+          ctx.arc(cx, cy, 19, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = "#0f172a";
+          ctx.strokeStyle = robot.stunTimer > 0 ? "#f43f5e" : robot.color;
+          ctx.lineWidth = 2.6;
+          ctx.beginPath();
+          ctx.arc(cx, cy, 14, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+
+          if (robot.state === "TO_DROPOFF") {
+            ctx.fillStyle = "#f59e0b";
+            ctx.fillRect(cx + 6, cy - 13, 8, 8);
+          }
+
+          ctx.fillStyle = "#f8fafc";
+          ctx.font = "bold 10px monospace";
+          ctx.textAlign = "center";
+          ctx.fillText(robot.id, cx, cy + 3.5);
+
+          const barW = 28;
+          const barH = 4;
+          const bx = cx - barW / 2;
+          const by = cy - 21;
+          ctx.fillStyle = "#1e293b";
+          ctx.fillRect(bx, by, barW, barH);
+          ctx.fillStyle =
+            robot.battery > 50 ? "#22c55e" : robot.battery > 25 ? "#f59e0b" : "#f43f5e";
+          ctx.fillRect(bx, by, (barW * robot.battery) / 100, barH);
+        }
+      }
+
+      updateTelemetryUI() {
+        document.getElementById("kpiOrders").textContent = this.metrics.ordersCompleted;
+        document.getElementById("kpiPending").textContent = `${this.orders.length} pending in queue`;
+        document.getElementById("kpiDistance").textContent = this.metrics.totalDistance;
+        document.getElementById("kpiNodes").textContent = this.metrics.nodesExplored;
+        document.getElementById("kpiSearchMode").textContent =
+          this.pathAlgo === "ASTAR" ? "Mode: A* Heuristic" : "Mode: BFS Uninformed";
+
+        document.getElementById("kpiHazards").textContent = this.metrics.hazardsMitigated;
+        document.getElementById("kpiCollisions").textContent = `${this.metrics.collisions} collisions suffered`;
+
+        document.getElementById("simStatusText").textContent = `${
+          this.running ? "RUNNING" : "PAUSED"
+        } • Active Queue: ${this.orders.length} orders`;
+
+        const strip = document.getElementById("fleetStrip");
+        strip.innerHTML = this.robots
+          .map((r) => {
+            const battColor =
+              r.battery > 50 ? "#22c55e" : r.battery > 25 ? "#f59e0b" : "#f43f5e";
+            return `
+              <div class="robot-mini-card">
+                <div class="robot-mini-top">
+                  <span style="color:${r.color};">${r.id}</span>
+                  <span>${r.battery.toFixed(0)}%</span>
+                </div>
+                <div class="bar-bg">
+                  <div class="bar-fill" style="width:${r.battery}%;background:${battColor};"></div>
+                </div>
+                <div style="color:#94a3b8;font-size:10.5px;">
+                  ${r.state}${r.order ? ` (${r.order.id})` : ""}
+                </div>
+              </div>
+            `;
+          })
+          .join("");
+      }
+
+      /**
+       * Runs 10 standardized batches comparing:
+       * Config A: A* Search + Bayesian Inference + MDP Value Iteration
+       * Config B: BFS Search + Naive Raw Sensor
+       */
+      runBenchmark10() {
+        const seededRng = (seed) => () => {
+          seed = (seed * 1664525 + 1013904223) % 4294967296;
+          return seed / 4294967296;
+        };
+
+        const simulateBatch = (seed, pathMode, useBayesMDP) => {
+          const rng = seededRng(seed);
+          const g = new Grid(16, 12);
+          g.resetLayout(this.params.prior, rng);
+          const pf = new AStarPathfinder(g);
+
+          const fleet = [
+            { x: 1, y: 1 },
+            { x: 5, y: 5 },
+            { x: 9, y: 10 }
+          ];
+
+          const pool = [...g.shelfPickups];
+          let totalNodes = 0;
+          let totalDist = 0;
+          let collisions = 0;
+
+          for (let i = 0; i < 8; i++) {
+            const r = fleet[i % fleet.length];
+            const pickup = pool.splice(Math.floor(rng() * pool.length), 1)[0];
+            const dropoff = g.dropoffs[Math.floor(rng() * g.dropoffs.length)];
+
+            const blockedSet = new Set();
+            // Simulate sensor evaluation along corridor checkpoints
+            for (const sc of g.sensorCheckpoints) {
+              const signal = this.bayes.simulateSensorReading(
+                sc.hasObstacle,
+                this.params.sensitivity,
+                this.params.falseAlarm,
+                rng
+              );
+              if (useBayesMDP) {
+                const b = this.bayes.updateBelief(
+                  this.params.prior,
+                  signal,
+                  this.params.sensitivity,
+                  this.params.falseAlarm
+                );
+                const m = this.mdp.solve(b.posterior, this.params.gamma);
+                if (m.bestAction === "DETOUR") {
+                  blockedSet.add(`${sc.x},${sc.y}`);
+                }
+              } else if (signal === "BLOCKED") {
+                blockedSet.add(`${sc.x},${sc.y}`);
+              }
+            }
+
+            const leg1 = pf.findPath({ x: r.x, y: r.y }, pickup, pathMode, blockedSet);
+            const leg2 = pf.findPath(pickup, dropoff, pathMode, blockedSet);
+            const fullSteps = [...leg1.path, ...leg2.path];
+
+            for (const st of fullSteps) {
+              const sc = g.getSensorAt(st.x, st.y);
+              if (sc && sc.hasObstacle) collisions += 1;
+            }
+
+            totalNodes += leg1.explored.length + leg2.explored.length;
+            totalDist += leg1.cost + leg2.cost;
+            r.x = dropoff.x;
+            r.y = dropoff.y;
+          }
+
+          return { totalNodes, totalDist, collisions };
+        };
+
+        let ai = { nodes: 0, dist: 0, col: 0 };
+        let base = { nodes: 0, dist: 0, col: 0 };
+
+        for (let run = 1; run <= 10; run++) {
+          const r1 = simulateBatch(run * 7919, "ASTAR", true);
+          const r2 = simulateBatch(run * 7919, "BFS", false);
+
+          ai.nodes += r1.totalNodes;
+          ai.dist += r1.totalDist;
+          ai.col += r1.collisions;
+
+          base.nodes += r2.totalNodes;
+          base.dist += r2.totalDist;
+          base.col += r2.collisions;
+        }
+
+        const avgAINodes = (ai.nodes / 10).toFixed(1);
+        const avgBaseNodes = (base.nodes / 10).toFixed(1);
+        const nodeGain = (((base.nodes - ai.nodes) / base.nodes) * 100).toFixed(1);
+
+        const avgAIDist = (ai.dist / 10).toFixed(1);
+        const avgBaseDist = (base.dist / 10).toFixed(1);
+        const distGain = (((base.dist - ai.dist) / Math.max(1, base.dist)) * 100).toFixed(1);
+
+        const avgAICol = (ai.col / 10).toFixed(1);
+        const avgBaseCol = (base.col / 10).toFixed(1);
+
+        document.getElementById("benchTableBody").innerHTML = `
+          <tr>
+            <td>Nodes Explored</td>
+            <td class="num">${avgAINodes}</td>
+            <td class="num">${avgBaseNodes}</td>
+            <td class="num gain-tag">-${nodeGain}%</td>
+          </tr>
+          <tr>
+            <td>Travel Distance</td>
+            <td class="num">${avgAIDist}</td>
+            <td class="num">${avgBaseDist}</td>
+            <td class="num gain-tag">${distGain >= 0 ? "-" + distGain : "+" + Math.abs(distGain)}%</td>
+          </tr>
+          <tr>
+            <td>Avg Collisions</td>
+            <td class="num">${avgAICol}</td>
+            <td class="num">${avgBaseCol}</td>
+            <td class="num gain-tag">-${Math.max(0, (avgBaseCol - avgAICol)).toFixed(1)}</td>
+          </tr>
+        `;
+
+        document.getElementById("benchmarkBox").classList.add("visible");
+        this.log(
+          "MDP",
+          `10-Run Benchmark complete: A*+Bayes+MDP explored ${nodeGain}% fewer nodes than BFS+Naive.`
+        );
+      }
+
+      bindEvents() {
+        document.getElementById("btnToggleRun").addEventListener("click", (e) => {
+          this.running = !this.running;
+          e.target.textContent = this.running ? "Pause Sim" : "Resume Sim";
+          e.target.classList.toggle("paused", !this.running);
+          document.getElementById("runDot").classList.toggle("paused", !this.running);
+        });
+
+        document.getElementById("btnReset").addEventListener("click", () => {
+          this.initSimulation();
+        });
+
+        document.getElementById("btnSpawnOrders").addEventListener("click", () => {
+          this.spawnOrders(5);
+        });
+
+        document.getElementById("speedSlider").addEventListener("input", (e) => {
+          this.speed = parseFloat(e.target.value);
+          document.getElementById("speedLabel").textContent = `${this.speed.toFixed(1)}x`;
+        });
+
+        document.getElementById("priorSlider").addEventListener("input", (e) => {
+          this.params.prior = parseFloat(e.target.value);
+          document.getElementById("priorLabel").textContent = this.params.prior.toFixed(2);
+          this.updateLiveMathPreview();
+        });
+
+        document.getElementById("sensSlider").addEventListener("input", (e) => {
+          this.params.sensitivity = parseFloat(e.target.value);
+          document.getElementById("sensLabel").textContent = this.params.sensitivity.toFixed(2);
+          this.updateLiveMathPreview();
+        });
+
+        document.getElementById("falseSlider").addEventListener("input", (e) => {
+          this.params.falseAlarm = parseFloat(e.target.value);
+          document.getElementById("falseLabel").textContent = this.params.falseAlarm.toFixed(2);
+          this.updateLiveMathPreview();
+        });
+
+        document.getElementById("gammaSlider").addEventListener("input", (e) => {
+          this.params.gamma = parseFloat(e.target.value);
+          document.getElementById("gammaLabel").textContent = this.params.gamma.toFixed(2);
+          this.updateLiveMathPreview();
+        });
+
+        document.querySelectorAll("#pathAlgoToggle .toggle-btn").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            document
+              .querySelectorAll("#pathAlgoToggle .toggle-btn")
+              .forEach((b) => b.classList.remove("active"));
+            btn.classList.add("active");
+            this.pathAlgo = btn.dataset.val;
+            this.log("ASTAR", `Switched pathfinding algorithm to ${this.pathAlgo}.`);
+          });
+        });
+
+        document.querySelectorAll("#policyAlgoToggle .toggle-btn").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            document
+              .querySelectorAll("#policyAlgoToggle .toggle-btn")
+              .forEach((b) => b.classList.remove("active"));
+            btn.classList.add("active");
+            this.policyAlgo = btn.dataset.val;
+            this.log("MDP", `Switched decision policy to ${this.policyAlgo}.`);
+          });
+        });
+
+        document.getElementById("btnBenchmark").addEventListener("click", () => {
+          this.runBenchmark10();
+        });
+
+        document.getElementById("btnClearLog").addEventListener("click", () => {
+          document.getElementById("aiLogFeed").innerHTML = "";
+        });
+
+        this.canvas.addEventListener("click", (e) => {
+          const rect = this.canvas.getBoundingClientRect();
+          const scaleX = this.canvas.width / rect.width;
+          const scaleY = this.canvas.height / rect.height;
+          const gx = Math.floor(((e.clientX - rect.left) * scaleX) / this.tileSize);
+          const gy = Math.floor(((e.clientY - rect.top) * scaleY) / this.tileSize);
+          this.handleObstacleToggle(gx, gy);
+        });
+      }
+
+      loop(now) {
+        const dt = Math.min(0.05, (now - this.lastFrameTime) / 1000);
+        this.lastFrameTime = now;
+
+        this.update(dt);
+        this.draw();
+        this.updateTelemetryUI();
+
+        requestAnimationFrame((t) => this.loop(t));
+      }
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      window.warehouseSim = new WarehouseSim("warehouseCanvas");
+    });
+  </script>
+</body>
+</html>
