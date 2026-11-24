@@ -551,7 +551,7 @@
           <span>Sensitivity P(BLOCKED|O)</span>
           <span class="val" id="sensLabel">0.80</span>
         </div>
-        <input type="range" id="sensSlider" min="0.50" max="0.99" step="0.05" value="0.80" />
+        <input type="range" id="sensSlider" min="0.50" max="0.99" step="0.01" value="0.80" />
       </div>
 
       <div class="control-group">
@@ -559,7 +559,7 @@
           <span>False Alarm P(BLOCKED|&not;O)</span>
           <span class="val" id="falseLabel">0.20</span>
         </div>
-        <input type="range" id="falseSlider" min="0.01" max="0.50" step="0.05" value="0.20" />
+        <input type="range" id="falseSlider" min="0.01" max="0.50" step="0.01" value="0.20" />
       </div>
 
       <div class="control-group">
@@ -567,7 +567,7 @@
           <span>MDP Discount Factor (&gamma;)</span>
           <span class="val" id="gammaLabel">0.90</span>
         </div>
-        <input type="range" id="gammaSlider" min="0.50" max="0.99" step="0.05" value="0.90" />
+        <input type="range" id="gammaSlider" min="0.50" max="0.99" step="0.01" value="0.90" />
       </div>
 
       <div class="section-divider"></div>
@@ -583,7 +583,7 @@
       </div>
 
       <div class="hint-box">
-        <strong>Interactive Grid:</strong> Click any aisle cell to drop or remove a <em>Spilled Box</em> obstacle, triggering real-time A* path recalculation.
+        <strong>Interactive Grid:</strong> Click any aisle cell to drop or remove a <em>Spilled Box</em> obstacle, triggering route recalculation with the selected search algorithm.
       </div>
     </aside>
 
@@ -640,7 +640,7 @@
       <div class="bench-box" id="benchmarkBox">
         <div class="card-title" style="margin-bottom:4px;font-size:11px;">
           <span>10-Run Comparative Results</span>
-          <span class="gain-tag">A*+Bayes+MDP Gain</span>
+          <span class="gain-tag">AI minus baseline</span>
         </div>
         <table>
           <thead>
@@ -648,7 +648,7 @@
               <th>Metric (10-Run Avg)</th>
               <th>A*+Bayes+MDP</th>
               <th>BFS+Naive</th>
-              <th>Gain</th>
+              <th>Difference</th>
             </tr>
           </thead>
           <tbody id="benchTableBody"></tbody>
@@ -810,6 +810,10 @@
       }
 
       findPath(start, goal, algorithm = "ASTAR", tempBlockedSet = null) {
+        if (!this.grid.isWalkable(start.x, start.y, tempBlockedSet) ||
+            !this.grid.isWalkable(goal.x, goal.y, tempBlockedSet)) {
+          return { path: [], explored: [], cost: Infinity };
+        }
         if (algorithm === "BFS") {
           return this.bfs(start, goal, tempBlockedSet);
         }
@@ -874,7 +878,7 @@
             return {
               path,
               explored,
-              cost: Math.max(0, path.length - 1)
+              cost: path.length
             };
           }
 
@@ -933,10 +937,10 @@
         return {
           prior: priorObstacle,
           reading,
-          scoreObstacle: Number(scoreObstacle.toFixed(4)),
-          scoreClear: Number(scoreClear.toFixed(4)),
-          evidence: Number(evidence.toFixed(4)),
-          posterior: Number(posterior.toFixed(4))
+          scoreObstacle,
+          scoreClear,
+          evidence,
+          posterior
         };
       }
     }
@@ -988,6 +992,7 @@
         let iterations = 0;
         while (true) {
           let delta = 0.0;
+          let entryActionGap = 0.0;
           const nextV = { ...V };
 
           for (const s of states) {
@@ -998,20 +1003,24 @@
               )
             );
             nextV[s] = Math.max(...qVals);
+            if (s === "Corridor_Entry") {
+              entryActionGap = Math.abs(qVals[0] - qVals[1]);
+            }
             delta = Math.max(delta, Math.abs(nextV[s] - V[s]));
           }
 
           V = nextV;
           iterations++;
-          if (delta < theta || iterations > 100) break;
+          // Near a tie, keep iterating until the remaining error cannot swap the actions.
+          const maxActionError = gamma * delta / (1 - gamma);
+          if (delta < theta && (delta === 0 || entryActionGap > 2 * maxActionError)) break;
+          if (iterations >= 100) break;
         }
 
         const qEntry = {};
         for (const a of actions) {
-          qEntry[a] = Number(
-            transitions("Corridor_Entry", a)
-              .reduce((sum, t) => sum + t.prob * (t.reward + gamma * (V[t.next] ?? 0.0)), 0.0)
-              .toFixed(2)
+          qEntry[a] = transitions("Corridor_Entry", a).reduce(
+            (sum, t) => sum + t.prob * (t.reward + gamma * (V[t.next] ?? 0.0)), 0.0
           );
         }
 
@@ -1169,11 +1178,12 @@
         const mBlocked = this.mdp.solve(bBlocked.posterior, this.params.gamma);
         const mClear = this.mdp.solve(bClear.posterior, this.params.gamma);
 
+        document.getElementById("benchmarkBox").classList.remove("visible");
         const box = document.getElementById("liveMathText");
         if (box) {
           box.innerHTML =
-            `If <b>BLOCKED</b> &rarr; P(O|E)=<b>${bBlocked.posterior.toFixed(4)}</b> &rarr; Q(PROCEED)=${mBlocked.Q.PROCEED}, Q(DETOUR)=${mBlocked.Q.DETOUR} &rarr; <span style="color:#f59e0b;font-weight:700;">${mBlocked.bestAction}</span><br>` +
-            `If <b>CLEAR</b> &nbsp;&nbsp;&rarr; P(O|E)=<b>${bClear.posterior.toFixed(4)}</b> &rarr; Q(PROCEED)=${mClear.Q.PROCEED}, Q(DETOUR)=${mClear.Q.DETOUR} &rarr; <span style="color:#22c55e;font-weight:700;">${mClear.bestAction}</span>`;
+            `If <b>BLOCKED</b> &rarr; P(O|E)=<b>${bBlocked.posterior.toFixed(4)}</b> &rarr; Q(PROCEED)=${mBlocked.Q.PROCEED.toFixed(2)}, Q(DETOUR)=${mBlocked.Q.DETOUR.toFixed(2)} &rarr; <span style="color:#f59e0b;font-weight:700;">${mBlocked.bestAction}</span><br>` +
+            `If <b>CLEAR</b> &nbsp;&nbsp;&rarr; P(O|E)=<b>${bClear.posterior.toFixed(4)}</b> &rarr; Q(PROCEED)=${mClear.Q.PROCEED.toFixed(2)}, Q(DETOUR)=${mClear.Q.DETOUR.toFixed(2)} &rarr; <span style="color:#22c55e;font-weight:700;">${mClear.bestAction}</span>`;
         }
       }
 
@@ -1185,7 +1195,8 @@
         }
 
         const availablePickups = this.grid.shelfPickups.filter(
-          sp => !this.orders.some(o => o.pickup.x === sp.x && o.pickup.y === sp.y)
+          sp => this.grid.isWalkable(sp.x, sp.y) &&
+            !this.orders.some(o => o.pickup.x === sp.x && o.pickup.y === sp.y)
         );
 
         let spawned = 0;
@@ -1213,31 +1224,45 @@
       }
 
       planRobotRoute(robot, target, reasonTag = "ASTAR") {
-        const res = this.pathfinder.findPath(
-          { x: robot.x, y: robot.y },
-          target,
-          this.pathAlgo,
-          robot.avoidedSensors
-        );
-        robot.path = res.path;
-        robot.explored = res.explored;
+        const start = { x: robot.x, y: robot.y };
+        let res = this.pathfinder.findPath(start, target, this.pathAlgo, robot.avoidedSensors);
         this.metrics.nodesExplored += res.explored.length;
 
-        if (res.path.length > 0) {
+        if (res.cost === Infinity && robot.avoidedSensors.size > 0) {
+          robot.avoidedSensors.clear();
+          res = this.pathfinder.findPath(start, target, this.pathAlgo);
+          this.metrics.nodesExplored += res.explored.length;
+        }
+
+        if (res.cost === Infinity && robot.state === "TO_CHARGER") {
+          const other = this.grid.chargers.find(chg => chg.x !== target.x || chg.y !== target.y);
+          const alternate = this.pathfinder.findPath(start, other, this.pathAlgo);
+          this.metrics.nodesExplored += alternate.explored.length;
+          if (alternate.cost < Infinity) {
+            target = other;
+            res = alternate;
+          }
+        }
+
+        // If a box changes the next step mid-move, restart from the last reached cell.
+        const next = res.path[0];
+        if (!next || next.x !== robot.path[0]?.x || next.y !== robot.path[0]?.y) {
+          robot.px = robot.x;
+          robot.py = robot.y;
+        }
+        robot.target = target;
+        robot.path = res.path;
+        robot.explored = res.explored;
+
+        if (res.cost === Infinity) {
+          this.log("REROUTE", `${robot.id} target (${target.x},${target.y}) currently blocked!`);
+        } else if (res.cost === 0) {
+          this.finishRobotLeg(robot);
+        } else {
           this.log(
             reasonTag,
-            `${robot.id} planned ${res.path.length}-step route to (${target.x},${target.y}) [explored ${res.explored.length} nodes].`
+            `${robot.id} planned ${res.cost}-step route to (${target.x},${target.y}) [explored ${res.explored.length} nodes].`
           );
-        } else if (robot.x !== target.x || robot.y !== target.y) {
-          // If avoiding sensor blocked all paths, clear avoidance and retry
-          if (robot.avoidedSensors.size > 0) {
-            robot.avoidedSensors.clear();
-            const fallback = this.pathfinder.findPath({ x: robot.x, y: robot.y }, target, this.pathAlgo);
-            robot.path = fallback.path;
-            robot.explored = fallback.explored;
-          } else {
-            this.log("REROUTE", `${robot.id} target (${target.x},${target.y}) currently blocked!`);
-          }
         }
         return res;
       }
@@ -1260,6 +1285,7 @@
               }
             }
             robot.state = "TO_CHARGER";
+            robot.checkedSensors.clear();
             robot.avoidedSensors.clear();
             this.log("MDP", `${robot.id}: Battery ${robot.battery.toFixed(0)}% &rarr; Routing to ${bestCharger.label}.`);
             this.planRobotRoute(robot, bestCharger, "ASTAR");
@@ -1306,13 +1332,6 @@
         );
         sensor.lastSignal = signal;
 
-        const target =
-          robot.state === "TO_PICKUP" && robot.order
-            ? robot.order.pickup
-            : robot.state === "TO_DROPOFF" && robot.order
-            ? robot.order.dropoff
-            : this.grid.chargers[0];
-
         if (this.policyAlgo === "BAYES_MDP") {
           // Week 6: Bayesian Belief Update
           const bRes = this.bayes.updateBelief(
@@ -1330,21 +1349,20 @@
           );
           this.log(
             "MDP",
-            `${robot.id} Value Iter (${mdpRes.iterations} iters): Q(PROCEED)=${mdpRes.Q.PROCEED}, Q(DETOUR)=${mdpRes.Q.DETOUR} &rarr; <b>${mdpRes.bestAction}</b>`
+            `${robot.id} Value Iter (${mdpRes.iterations} iters): Q(PROCEED)=${mdpRes.Q.PROCEED.toFixed(2)}, Q(DETOUR)=${mdpRes.Q.DETOUR.toFixed(2)} &rarr; <b>${mdpRes.bestAction}</b>`
           );
 
-          if (mdpRes.bestAction === "DETOUR") {
-            this.metrics.hazardsMitigated += 1;
-            robot.avoidedSensors.add(`${sensor.x},${sensor.y}`);
-            this.planRobotRoute(robot, target, "REROUTE");
-          }
+          if (mdpRes.bestAction !== "DETOUR") return;
         } else {
-          // Naive Sensor Policy: blindly trusts raw signal without Bayes or MDP utility
-          if (signal === "BLOCKED") {
-            robot.avoidedSensors.add(`${sensor.x},${sensor.y}`);
-            this.log("REROUTE", `[NAIVE] ${robot.id} blindly detoured on raw BLOCKED at ${sensor.id}.`);
-            this.planRobotRoute(robot, target, "REROUTE");
-          }
+          if (signal !== "BLOCKED") return;
+          this.log("REROUTE", `[NAIVE] ${robot.id} detouring on raw BLOCKED at ${sensor.id}.`);
+        }
+
+        const sensorKey = `${sensor.x},${sensor.y}`;
+        robot.avoidedSensors.add(sensorKey);
+        const route = this.planRobotRoute(robot, robot.target, "REROUTE");
+        if (sensor.hasObstacle && route.cost < Infinity && robot.avoidedSensors.has(sensorKey)) {
+          this.metrics.hazardsMitigated += 1;
         }
       }
 
@@ -1359,16 +1377,27 @@
           if (robot.path.length === 0) continue;
           const hitsObstacle = robot.path.some(step => step.x === gx && step.y === gy);
           if (hitsObstacle) {
-            const target =
-              robot.state === "TO_PICKUP" && robot.order
-                ? robot.order.pickup
-                : robot.state === "TO_DROPOFF" && robot.order
-                ? robot.order.dropoff
-                : robot.path[robot.path.length - 1];
-
             this.log("REROUTE", `${robot.id} path blocked at (${gx},${gy})! Recomputing via ${this.pathAlgo}...`);
-            this.planRobotRoute(robot, target, "REROUTE");
+            this.planRobotRoute(robot, robot.target, "REROUTE");
           }
+        }
+      }
+
+      finishRobotLeg(robot) {
+        if (robot.state === "TO_PICKUP" && robot.order) {
+          robot.state = "TO_DROPOFF";
+          robot.checkedSensors.clear();
+          this.planRobotRoute(robot, robot.order.dropoff, "ASTAR");
+        } else if (robot.state === "TO_DROPOFF" && robot.order) {
+          this.metrics.ordersCompleted += 1;
+          this.orders = this.orders.filter(o => o.id !== robot.order.id);
+          this.log("MDP", `${robot.id} delivered ${robot.order.id} at Drop-Off Bay!`);
+          robot.order = null;
+          robot.state = "IDLE";
+          robot.explored = [];
+        } else if (robot.state === "TO_CHARGER") {
+          robot.state = "CHARGING";
+          robot.explored = [];
         }
       }
 
@@ -1425,34 +1454,14 @@
 
               // Check arrival
               if (robot.path.length === 0) {
-                if (robot.state === "TO_PICKUP" && robot.order) {
-                  robot.state = "TO_DROPOFF";
-                  robot.checkedSensors.clear();
-                  this.planRobotRoute(robot, robot.order.dropoff, "ASTAR");
-                } else if (robot.state === "TO_DROPOFF" && robot.order) {
-                  this.metrics.ordersCompleted += 1;
-                  this.orders = this.orders.filter(o => o.id !== robot.order.id);
-                  this.log("MDP", `${robot.id} delivered ${robot.order.id} at Drop-Off Bay!`);
-                  robot.order = null;
-                  robot.state = "IDLE";
-                  robot.explored = [];
-                } else if (robot.state === "TO_CHARGER") {
-                  robot.state = "CHARGING";
-                  robot.explored = [];
-                }
+                this.finishRobotLeg(robot);
               }
             } else {
               robot.px += (dx / dist) * moveSpeed * dt;
               robot.py += (dy / dist) * moveSpeed * dt;
             }
           } else if (robot.state !== "IDLE" && this.dispatchCooldown <= 0) {
-            const target =
-              robot.state === "TO_PICKUP" && robot.order
-                ? robot.order.pickup
-                : robot.state === "TO_DROPOFF" && robot.order
-                ? robot.order.dropoff
-                : this.grid.chargers[0];
-            this.planRobotRoute(robot, target, "REROUTE");
+            this.planRobotRoute(robot, robot.target, "REROUTE");
           }
         }
 
@@ -1779,11 +1788,12 @@
 
         const avgAINodes = (ai.nodes / 10).toFixed(1);
         const avgBaseNodes = (base.nodes / 10).toFixed(1);
-        const nodeGain = (((base.nodes - ai.nodes) / base.nodes) * 100).toFixed(1);
+        const nodeDifference = 100 * (ai.nodes - base.nodes) / base.nodes;
 
         const avgAIDist = (ai.dist / 10).toFixed(1);
         const avgBaseDist = (base.dist / 10).toFixed(1);
-        const distGain = (((base.dist - ai.dist) / Math.max(1, base.dist)) * 100).toFixed(1);
+        const distDifference = 100 * (ai.dist - base.dist) / base.dist;
+        const signed = value => (value > 0 ? "+" : "") + value.toFixed(1);
 
         const avgAICol = (ai.col / 10).toFixed(1);
         const avgBaseCol = (base.col / 10).toFixed(1);
@@ -1793,26 +1803,26 @@
             <td>Nodes Explored</td>
             <td class="num">${avgAINodes}</td>
             <td class="num">${avgBaseNodes}</td>
-            <td class="num gain-tag">-${nodeGain}%</td>
+            <td class="num gain-tag">${signed(nodeDifference)}%</td>
           </tr>
           <tr>
             <td>Travel Distance</td>
             <td class="num">${avgAIDist}</td>
             <td class="num">${avgBaseDist}</td>
-            <td class="num gain-tag">${distGain >= 0 ? "-" + distGain : "+" + Math.abs(distGain)}%</td>
+            <td class="num gain-tag">${signed(distDifference)}%</td>
           </tr>
           <tr>
             <td>Avg Collisions</td>
             <td class="num">${avgAICol}</td>
             <td class="num">${avgBaseCol}</td>
-            <td class="num gain-tag">-${Math.max(0, (avgBaseCol - avgAICol)).toFixed(1)}</td>
+            <td class="num gain-tag">${signed((ai.col - base.col) / 10)}</td>
           </tr>
         `;
 
         document.getElementById("benchmarkBox").classList.add("visible");
         this.log(
           "MDP",
-          `10-Run Benchmark complete: A*+Bayes+MDP explored ${nodeGain}% fewer nodes than BFS+Naive.`
+          `10-Run Benchmark complete. Average nodes explored: A*+Bayes+MDP ${avgAINodes}, BFS+Naive ${avgBaseNodes}.`
         );
       }
 

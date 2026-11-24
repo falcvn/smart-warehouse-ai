@@ -1,0 +1,37 @@
+Smart Warehouse Delivery Robot
+Paired benchmark measurements
+
+Each seed specifies eight orders for both configurations. Each order has two legs.
+Nodes count cells removed from the search frontier for exploration, including the goal.
+Distance counts grid moves. Collisions count entries into occupied checkpoints.
+Sensitivity 0.80    False alarm 0.20    Discount 0.90
+
+Obstacle prior 0.30
+            A* + Bayes + MDP                BFS + naive sensor
+Seed        Nodes   Distance   Collisions   Nodes   Distance   Collisions
+7919          431        168            0    1361        168            0
+15838         475        190            0    1532        190            0
+23757         558        226            0    1787        226            0
+31676         432        174            0    1316        174            0
+39595         396        163            0    1300        163            0
+47514         462        173            0    1339        173            0
+55433         513        196            1    1575        196            1
+63352         381        162            0    1338        162            0
+71271         384        177            0    1419        177            0
+79190         524        193            0    1480        193            0
+Mean        455.6      182.2          0.1   1444.7      182.2          0.1
+
+Obstacle prior 0.80
+            A* + Bayes + MDP                BFS + naive sensor
+Seed        Nodes   Distance   Collisions   Nodes   Distance   Collisions
+7919          410        168            0    1347        168            0
+15838         464        190            0    1529        190            0
+23757         550        226            0    1764        226            0
+31676         421        176            0    1321        176            0
+39595         377        163            0    1277        163            0
+47514         514        177            0    1329        173            0
+55433         494        196            0    1565        196            1
+63352         366        162            0    1295        162            0
+71271         375        177            0    1413        177            2
+79190         513        193            0    1480        193            0
+Mean        448.4      182.8            0    1432      182.4          0.3
